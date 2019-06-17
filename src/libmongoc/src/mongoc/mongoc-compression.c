@@ -28,6 +28,9 @@
 #ifdef MONGOC_ENABLE_COMPRESSION_SNAPPY
 #include <snappy-c.h>
 #endif
+#ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+#include <zstd.h>
+#endif
 #endif
 
 size_t
@@ -49,6 +52,11 @@ mongoc_compressor_max_compressed_length (int32_t compressor_id, size_t len)
       break;
 #endif
 
+#ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+   case MONGOC_COMPRESSOR_ZSTD_ID:
+      return ZSTD_compressBound (len);
+      break;
+#endif
    case MONGOC_COMPRESSOR_NOOP_ID:
       return len;
       break;
@@ -72,6 +80,12 @@ mongoc_compressor_supported (const char *compressor)
    }
 #endif
 
+#ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+   if (!strcasecmp (compressor, MONGOC_COMPRESSOR_ZSTD_STR)) {
+      return true;
+   }
+#endif
+
    if (!strcasecmp (compressor, MONGOC_COMPRESSOR_NOOP_STR)) {
       return true;
    }
@@ -88,6 +102,9 @@ mongoc_compressor_id_to_name (int32_t compressor_id)
 
    case MONGOC_COMPRESSOR_ZLIB_ID:
       return MONGOC_COMPRESSOR_ZLIB_STR;
+
+   case MONGOC_COMPRESSOR_ZSTD_ID:
+      return MONGOC_COMPRESSOR_ZSTD_STR;
 
    case MONGOC_COMPRESSOR_NOOP_ID:
       return MONGOC_COMPRESSOR_NOOP_STR;
@@ -112,6 +129,12 @@ mongoc_compressor_name_to_id (const char *compressor)
    }
 #endif
 
+#ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+   if (strcasecmp (MONGOC_COMPRESSOR_ZSTD_STR, compressor) == 0) {
+      return MONGOC_COMPRESSOR_ZLIB_ID;
+   }
+#endif
+
    if (strcasecmp (MONGOC_COMPRESSOR_NOOP_STR, compressor) == 0) {
       return MONGOC_COMPRESSOR_NOOP_ID;
    }
@@ -129,6 +152,7 @@ mongoc_uncompress (int32_t compressor_id,
    TRACE ("Uncompressing with '%s' (%d)",
           mongoc_compressor_id_to_name (compressor_id),
           compressor_id);
+
    switch (compressor_id) {
    case MONGOC_COMPRESSOR_SNAPPY_ID: {
 #ifdef MONGOC_ENABLE_COMPRESSION_SNAPPY
@@ -159,6 +183,25 @@ mongoc_uncompress (int32_t compressor_id,
       return ok == Z_OK;
 #else
       MONGOC_WARNING ("Received zlib compressed opcode, but zlib "
+                      "compression is not compiled in");
+      return false;
+#endif
+      break;
+   }
+
+   case MONGOC_COMPRESSOR_ZSTD_ID: {
+#ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+      int ok;
+
+      ok =
+         ZSTD_decompress (uncompressed,
+                          ZSTD_getFrameContentSize (compressed, compressed_len),
+                          compressed,
+                          compressed_len);
+
+      return !ZSTD_isError (ok);
+#else
+      MONGOC_WARNING ("Received zstd compressed opcode, but zstd "
                       "compression is not compiled in");
       return false;
 #endif
@@ -211,6 +254,20 @@ mongoc_compress (int32_t compressor_id,
       break;
 #else
       MONGOC_ERROR ("Client attempting to use compress with zlib, but zlib "
+                    "compression is not compiled in");
+      return false;
+#endif
+
+   case MONGOC_COMPRESSOR_ZSTD_ID:
+#ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+      return !ZSTD_isError (ZSTD_compress (compressed,
+                                           compressed_len,
+                                           uncompressed,
+                                           uncompressed_len,
+                                           compression_level));
+      break;
+#else
+      MONGOC_ERROR ("Client attempting to use compress with zstd, but zstd "
                     "compression is not compiled in");
       return false;
 #endif
