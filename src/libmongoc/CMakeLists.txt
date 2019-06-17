@@ -26,6 +26,7 @@ set (MONGOC_ENABLE_CRYPTO_SYSTEM_PROFILE 0)
 set (MONGOC_ENABLE_COMPRESSION 0)
 set (MONGOC_ENABLE_COMPRESSION_SNAPPY 0)
 set (MONGOC_ENABLE_COMPRESSION_ZLIB 0)
+set (MONGOC_ENABLE_COMPRESSION_ZSTD 0)
 
 if (ENABLE_COVERAGE)
    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g --coverage")
@@ -601,6 +602,15 @@ set (LIBRARIES
 
 if (WIN32)
    set (LIBRARIES ${LIBRARIES} ws2_32)
+endif ()
+
+find_package(PkgConfig)
+pkg_check_modules (ZSTD libzstd)
+
+if (ZSTD_FOUND)
+   message (STATUS "Found zstd")
+   set (LIBRARIES ${LIBRARIES} ${ZSTD_INCLUDE_DIR})
+   set (MONGOC_ENABLE_COMPRESSION_ZSTD 1)
 endif ()
 
 add_library (mongoc_shared SHARED ${SOURCES} ${HEADERS} ${HEADERS_FORWARDING})
