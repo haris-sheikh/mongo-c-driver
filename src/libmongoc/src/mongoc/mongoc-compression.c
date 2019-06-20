@@ -131,7 +131,7 @@ mongoc_compressor_name_to_id (const char *compressor)
 
 #ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
    if (strcasecmp (MONGOC_COMPRESSOR_ZSTD_STR, compressor) == 0) {
-      return MONGOC_COMPRESSOR_ZLIB_ID;
+      return MONGOC_COMPRESSOR_ZSTD_ID;
    }
 #endif
 
@@ -194,9 +194,9 @@ mongoc_uncompress (int32_t compressor_id,
       int ok;
 
       ok =
-         ZSTD_decompress (uncompressed,
+         ZSTD_decompress ((void *) uncompressed,
                           ZSTD_getFrameContentSize (compressed, compressed_len),
-                          compressed,
+                          (const void *) compressed,
                           compressed_len);
 
       return !ZSTD_isError (ok);
@@ -227,6 +227,7 @@ mongoc_compress (int32_t compressor_id,
                  char *compressed,
                  size_t *compressed_len)
 {
+   int ok;
    TRACE ("Compressing with '%s' (%d)",
           mongoc_compressor_id_to_name (compressor_id),
           compressor_id);
@@ -260,11 +261,16 @@ mongoc_compress (int32_t compressor_id,
 
    case MONGOC_COMPRESSOR_ZSTD_ID:
 #ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
-      return !ZSTD_isError (ZSTD_compress (compressed,
-                                           compressed_len,
-                                           uncompressed,
-                                           uncompressed_len,
-                                           compression_level));
+      ok = ZSTD_compress ((void *) compressed,
+                          *compressed_len,
+                          (const void *) uncompressed,
+                          uncompressed_len,
+                          compression_level);
+
+      if (!ZSTD_isError (ok)) {
+         *compressed_len = ok;
+      }
+      return !ZSTD_isError (ok);
       break;
 #else
       MONGOC_ERROR ("Client attempting to use compress with zstd, but zstd "
