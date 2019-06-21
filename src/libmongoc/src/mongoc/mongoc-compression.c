@@ -227,7 +227,6 @@ mongoc_compress (int32_t compressor_id,
                  char *compressed,
                  size_t *compressed_len)
 {
-   int ok;
    TRACE ("Compressing with '%s' (%d)",
           mongoc_compressor_id_to_name (compressor_id),
           compressor_id);
@@ -261,6 +260,7 @@ mongoc_compress (int32_t compressor_id,
 
    case MONGOC_COMPRESSOR_ZSTD_ID:
 #ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
+      int ok;
       ok = ZSTD_compress ((void *) compressed,
                           *compressed_len,
                           (const void *) uncompressed,

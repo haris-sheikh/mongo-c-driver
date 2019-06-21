@@ -92,6 +92,17 @@ else ()
    message (STATUS "Disabling zlib compression")
 endif ()
 
+find_package(PkgConfig)
+pkg_check_modules (ZSTD libzstd)
+
+if (ZSTD_FOUND)
+   message (STATUS "Found zstd")
+   set (LIBRARIES ${LIBRARIES} ${ZSTD_LINK_LIBRARIES})
+   set (MONGOC_INTERNAL_INCLUDE_DIRS ${MONGOC_INTERNAL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
+   set (MONGOC_ENABLE_COMPRESSION 1)
+   set (MONGOC_ENABLE_COMPRESSION_ZSTD 1)
+endif ()
+
 if (NOT ENABLE_SSL STREQUAL OFF)
    # Try OpenSSL automatically everywhere but Mac and Windows.
    if (ENABLE_SSL STREQUAL "OPENSSL"
@@ -602,16 +613,6 @@ set (LIBRARIES
 
 if (WIN32)
    set (LIBRARIES ${LIBRARIES} ws2_32)
-endif ()
-
-find_package(PkgConfig)
-pkg_check_modules (ZSTD libzstd)
-
-if (ZSTD_FOUND)
-   message (STATUS "Found zstd")
-   set (LIBRARIES ${LIBRARIES} ${ZSTD_LINK_LIBRARIES})
-   set (MONGOC_INTERNAL_INCLUDE_DIRS ${MONGOC_INTERNAL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
-   set (MONGOC_ENABLE_COMPRESSION_ZSTD 1)
 endif ()
 
 add_library (mongoc_shared SHARED ${SOURCES} ${HEADERS} ${HEADERS_FORWARDING})
