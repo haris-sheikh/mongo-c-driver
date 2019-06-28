@@ -532,7 +532,7 @@ mongoc_change_stream_next (mongoc_change_stream_t *stream, const bson_t **bson)
          if (!mongoc_cursor_error_document (stream->cursor, &err, &err_doc)) {
             goto end;
          }
-         if (bson_empty0 (err_doc)) {
+         if (err_doc) {
             resumable = _is_resumable_error (err_doc);
          } else {
             resumable = false;
