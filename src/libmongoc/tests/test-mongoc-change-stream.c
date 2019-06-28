@@ -814,8 +814,18 @@ test_change_stream_resumable_error (void)
    ASSERT_ERROR_CONTAINS (err, MONGOC_ERROR_SERVER, 11601, "interrupted");
    ASSERT_MATCH (err_doc, interrupted_err);
    future_destroy (future);
+   mongoc_change_stream_destroy (stream);
 
    /* Test an error on the initial aggregate when resuming. */
+   future = future_collection_watch (coll, tmp_bson ("{}"), NULL);
+   request = mock_server_receives_command (
+            server, "db", MONGOC_QUERY_SLAVE_OK, "{'killCursors': 'coll'}");
+   mock_server_replies_simple (request, "{'cursorsKilled': [123]}");
+   stream = future_get_mongoc_change_stream_ptr (future);
+   ASSERT (stream);
+   request_destroy (request);
+   future_destroy (future);
+
    future = future_collection_watch (coll, tmp_bson ("{}"), NULL);
    request = mock_server_receives_command (
       server, "db", MONGOC_QUERY_SLAVE_OK, watch_cmd);
@@ -827,6 +837,8 @@ test_change_stream_resumable_error (void)
    ASSERT (stream);
    request_destroy (request);
    future_destroy (future);
+   
+   fprintf (stderr, "get here\n");
 
    future = future_change_stream_next (stream, &next_doc);
    request =

@@ -1866,6 +1866,7 @@ _mongoc_client_command_with_opts (mongoc_client_t *client,
       }
    }
 
+   fprintf (stderr, "getting here with stream, but error on sending command\n");
    ret = _mongoc_client_command_with_stream (
       client, &parts, server_stream, reply_ptr, error);
 

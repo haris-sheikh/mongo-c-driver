@@ -503,6 +503,7 @@ mongoc_change_stream_next (mongoc_change_stream_t *stream, const bson_t **bson)
    BSON_ASSERT (bson);
 
    if (stream->err.code != 0) {
+      fprintf (stderr, "err msg = %s\n", stream->err.message);
       goto end;
    }
 
@@ -540,6 +541,7 @@ mongoc_change_stream_next (mongoc_change_stream_t *stream, const bson_t **bson)
       }
 
       if (!resumable) {
+         fprintf (stderr, "not resumable\n");
          stream->err = err;
          bson_destroy (&stream->err_doc);
          bson_copy_to (err_doc, &stream->err_doc);
