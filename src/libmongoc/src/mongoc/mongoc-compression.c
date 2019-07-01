@@ -195,9 +195,9 @@ mongoc_uncompress (int32_t compressor_id,
 
       ok =
          ZSTD_decompress ((void *) uncompressed,
-                          ZSTD_getFrameContentSize (compressed, compressed_len),
+                          (size_t) uncompressed_len,
                           (const void *) compressed,
-                          compressed_len);
+                          (size_t) compressed_len);
 
       return !ZSTD_isError (ok);
 #else
@@ -237,7 +237,6 @@ mongoc_compress (int32_t compressor_id,
       return snappy_compress (
                 uncompressed, uncompressed_len, compressed, compressed_len) ==
              SNAPPY_OK;
-      break;
 #else
       MONGOC_ERROR ("Client attempting to use compress with snappy, but snappy "
                     "compression is not compiled in");
@@ -251,7 +250,6 @@ mongoc_compress (int32_t compressor_id,
                         (unsigned char *) uncompressed,
                         uncompressed_len,
                         compression_level) == Z_OK;
-      break;
 #else
       MONGOC_ERROR ("Client attempting to use compress with zlib, but zlib "
                     "compression is not compiled in");
@@ -262,16 +260,15 @@ mongoc_compress (int32_t compressor_id,
 #ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
       int ok;
       ok = ZSTD_compress ((void *) compressed,
-                          *compressed_len,
+                          (size_t) *compressed_len,
                           (const void *) uncompressed,
-                          uncompressed_len,
+                          (size_t) uncompressed_len,
                           compression_level);
 
       if (!ZSTD_isError (ok)) {
          *compressed_len = ok;
       }
       return !ZSTD_isError (ok);
-      break;
 #else
       MONGOC_ERROR ("Client attempting to use compress with zstd, but zstd "
                     "compression is not compiled in");
