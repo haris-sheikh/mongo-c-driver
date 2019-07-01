@@ -491,7 +491,7 @@ all_tasks = chain(all_tasks, DNSTask.matrix())
 
 
 class CompressionTask(MatrixTask):
-    axes = OD([('compression', ['zlib', 'snappy', 'zstd', 'compression'])])
+    axes = OD([('compression', ['zlib', 'snappy', 'zstd', 'compression', '.compressors'])])
     name_prefix = 'test-latest-server'
 
     def __init__(self, *args, **kwargs):
