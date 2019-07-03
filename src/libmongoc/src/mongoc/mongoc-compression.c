@@ -195,9 +195,13 @@ mongoc_uncompress (int32_t compressor_id,
 
       ok =
          ZSTD_decompress ((void *) uncompressed,
-                          (size_t) uncompressed_len,
+                          *uncompressed_len,
                           (const void *) compressed,
-                          (size_t) compressed_len);
+                          compressed_len);
+
+      if (!ZSTD_isError (ok)) {
+         *uncompressed_len = ok;
+      }
 
       return !ZSTD_isError (ok);
 #else
@@ -256,13 +260,14 @@ mongoc_compress (int32_t compressor_id,
       return false;
 #endif
 
-   case MONGOC_COMPRESSOR_ZSTD_ID:
+   case MONGOC_COMPRESSOR_ZSTD_ID: {
 #ifdef MONGOC_ENABLE_COMPRESSION_ZSTD
       int ok;
+
       ok = ZSTD_compress ((void *) compressed,
-                          (size_t) *compressed_len,
+                          *compressed_len,
                           (const void *) uncompressed,
-                          (size_t) uncompressed_len,
+                          uncompressed_len,
                           compression_level);
 
       if (!ZSTD_isError (ok)) {
@@ -274,6 +279,7 @@ mongoc_compress (int32_t compressor_id,
                     "compression is not compiled in");
       return false;
 #endif
+   }
    case MONGOC_COMPRESSOR_NOOP_ID:
       memcpy (compressed, uncompressed, uncompressed_len);
       *compressed_len = uncompressed_len;
