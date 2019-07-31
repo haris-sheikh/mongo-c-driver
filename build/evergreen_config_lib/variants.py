@@ -493,7 +493,7 @@ all_variants = [
             '*zSeries',
             'rhel72-zseries-test',
             ['release-compile',
-             '.compression',
+        #      '.compression', --> TODO: waiting on ticket CDRIVER-3258
              'debug-compile-nosasl-nossl',
              'debug-compile-no-align',
              '.debug-compile !.sspi .openssl',
